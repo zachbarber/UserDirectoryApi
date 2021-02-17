@@ -19,6 +19,7 @@ app.use(cors());
 
 app.get('/api/companies', (req, res) => {
 
+
 });
 
 app.get('/api/users', (req, res) => {
