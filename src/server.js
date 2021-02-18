@@ -11,14 +11,14 @@ global.__dirname = path.resolve('./');
 const app = express();
 
 
-const PORT = process.env.PORT || 35565;
+const PORT = process.env.PORT || 3000;
 
 
 const connection = mysql.createConnection({
   host: 'localhost',
   user: 'root',
   password: 'password',
-  database: 'employees'
+  database: 'employeedirectory'
 });
 
 
@@ -30,8 +30,29 @@ app.use(bodyParser.json());
 
 
 app.get('/api/companies', (req, res) => {
-
-
+  if (req.query.id) {
+    (await () => {
+      return new Promise((resolve, reject) => {
+        connection.query('SELECT * FROM employees WHERE id = ?', [req.id], (err, rows) => {
+          if (err) {
+            return reject(err);
+          }
+          resolve(rows);
+        });
+      });
+    });
+  } else {
+    (await () => {
+      return new Promise((resolve, reject) => {
+        connection.query('SELECT * FROM employees', (err, rows) => {
+          if (err) {
+            return reject(err);
+          }
+          resolve(rows);
+        });
+      });
+    });
+  }
 });
 
 app.get('/api/users', (req, res) => {
