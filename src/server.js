@@ -2,71 +2,60 @@ import express from 'express';
 import path from 'path';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import mysql from 'mysql';
+import SqlService from './SqlService';
 
 
 global.__dirname = path.resolve('./');
 
 
-const app = express();
+const app = express()
+  .use(cors())
+  .use(express.static(path.join(__dirname, '../../employee-directory-web/build')))
+  .use(bodyParser.json());
 
 
-const PORT = process.env.PORT || 3000;
+const sqlService = new SqlService();
 
+//Companies
 
-const connection = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: 'password',
-  database: 'employeedirectory'
+app.get('/api/companies', async (req, res) => {
+
 });
 
+app.post('/api/companies', async (req, res) => {
 
-app.use(cors());
+});
 
-app.use(express.static(path.join(__dirname, '../../employee-directory-web/build')));
+app.put('/api/companies', async (req, res) => {
 
-app.use(bodyParser.json());
+});
 
+app.delete('/api/companies', async (req, res) => {
 
-app.get('/api/companies', (req, res) => {
+});
+
+//Employees
+
+app.get('/api/employees', async (req, res) => {
   if (req.query.id) {
-    (await () => {
-      return new Promise((resolve, reject) => {
-        connection.query('SELECT * FROM employees WHERE id = ?', [req.id], (err, rows) => {
-          if (err) {
-            return reject(err);
-          }
-          resolve(rows);
-        });
-      });
-    });
-  } else {
-    (await () => {
-      return new Promise((resolve, reject) => {
-        connection.query('SELECT * FROM employees', (err, rows) => {
-          if (err) {
-            return reject(err);
-          }
-          resolve(rows);
-        });
-      });
-    });
+    SqlService.query('SELECT * FROM employees')
   }
 });
 
-app.get('/api/users', (req, res) => {
+app.post('/api/employees', async (req, res) => {
 
 });
 
-app.post('/api/users', async (req, res) => {
+app.put('/api/employees', async (req, res) => {
 
 });
 
-app.put('/api/users', (req, res) => {
+app.delete('/api/employees', async (req, res) => {
 
 });
 
+
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`listening on ${PORT}..`);
