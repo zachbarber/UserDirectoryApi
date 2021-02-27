@@ -57,12 +57,12 @@ app.get('/api/employees', async (req, res) => {
       );
     } else {
 
-      res.send(await sqlService.query('SELECT * FROM employees WHERE id = ?', [employeeId]));
+      res.send(await sqlService.query('SELECT * FROM employees WHERE id = ? AND deleted_at IS NULL', [employeeId]));
 
     }
   } else {
 
-    res.send(await sqlService.query('SELECT * FROM employees'));
+    res.send(await sqlService.query('SELECT * FROM employees WHERE deleted_at IS NULL'));
   }
 }
 );
@@ -75,6 +75,8 @@ app.post('/api/employees', async (req, res) => {
   if (!employeeValidationErrors) {
 
     const employeeData = req.body;
+
+    await sqlService.query('INSERT INTO employees (name, role, company, created_at) VALUES (?, ?, ?, NOW())', [employeeData.name, employeeData.role, employeeData.company]);
 
   } else {
 
@@ -93,6 +95,50 @@ app.put('/api/employees', async (req, res) => {
 
 app.delete('/api/employees', async (req, res) => {
 
+  const employeeData = req.body;
+
+  if (employeeData.id) {
+
+    const employeeId = parseInt(employeeData.id);
+
+    if (isNaN(employeeId)) {
+
+      return res.status(400).send(
+        {
+          errorType: 'Validation',
+          field: 'id',
+          error: 'must be provided as a number'
+        }
+      );
+    } else {
+
+      const employeeFound = await sqlService.query('SELECT * FROM employees WHERE id = ? AND deleted_at IS NULL', [employeeId]);
+
+      if (employeeFound.length > 0) {
+
+        res.send(await sqlService.query(`UPDATE employees SET deleted_at = NOW() WHERE id = ${employeeId}`));
+      } else {
+
+        return res.status(400).send(
+          {
+            errorType: 'Validation',
+            field: 'id',
+            error: 'employee not found'
+          }
+        );
+      }
+    };
+
+  } else {
+
+    return res.status(400).send(
+      {
+        errorType: 'Validation',
+        field: 'id',
+        error: 'id not provided'
+      }
+    );
+  }
 });
 
 
