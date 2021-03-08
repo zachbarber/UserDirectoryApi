@@ -68,12 +68,57 @@ app.post('/api/companies', async (req, res) => {
   }
 });
 
+
 app.put('/api/companies', async (req, res) => {
 
 });
 
+
 app.delete('/api/companies', async (req, res) => {
 
+  const companyData = req.body;
+
+  if (companyData.id) {
+
+    const companyId = parseInt(companyData.id);
+
+    if (isNaN(companyId)) {
+
+      res.status(400).send(
+        {
+          errorType: 'Validation',
+          field: 'id',
+          error: 'must be provided as a number'
+        }
+      );
+    } else {
+
+      const companyFound = await sqlService.query('SELECT * FROM companies WHERE id = ? AND deleted_at IS NULL', [companyId]);
+
+      if (companyFound.length > 0) {
+
+        res.send(await sqlService.query(`UPDATE companies SET deleted_at = NOW() WHERE id = ${companyId}`));
+      } else {
+
+        return res.status(404).send(
+          {
+            errorType: 'Resource not found',
+            field: 'id',
+            error: 'company not found'
+          }
+        );
+      }
+    }
+  } else {
+
+    return res.status(400).send(
+      {
+        errorType: 'Validation',
+        field: 'id',
+        error: 'id not provided'
+      }
+    );
+  }
 });
 
 
@@ -133,6 +178,7 @@ app.post('/api/employees', async (req, res) => {
 app.put('/api/employees', async (req, res) => {
 
 });
+
 
 app.delete('/api/employees', async (req, res) => {
 
