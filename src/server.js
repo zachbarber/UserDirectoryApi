@@ -18,7 +18,7 @@ const app = express()
 const sqlService = new SqlService();
 
 
-//Companie routes
+//Company routes
 
 
 app.get('/api/companies', async (req, res) => {
