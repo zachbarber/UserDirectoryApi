@@ -1,5 +1,5 @@
 import express from 'express';
-import path, { parse } from 'path';
+import path from 'path';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import SqlService from './SqlService';
@@ -156,6 +156,8 @@ app.get('/api/employees', async (req, res) => {
 app.post('/api/employees', async (req, res) => {
 
   const employeeData = req.body;
+
+  console.log(typeof employeeData.is_supervisor);
 
   const employeeValidationErrors = validateEmployee(employeeData);
 
