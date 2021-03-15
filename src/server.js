@@ -24,6 +24,7 @@ const sqlService = new SqlService();
 app.get('/api/departments', async (req, res) => {
 
   if (req.query.id) {
+
     const departmentId = parseInt(req.query.id);
 
     if (isNaN(departmentId)) {
@@ -37,7 +38,6 @@ app.get('/api/departments', async (req, res) => {
     } else {
 
       res.send(await sqlService.query('SELECT * FROM departments WHERE id = ? AND deleted_at IS NULL', [departmentId]));
-
     }
   } else {
 
@@ -76,38 +76,24 @@ app.put('/api/departments', async (req, res) => {
 
 app.delete('/api/departments', async (req, res) => {
 
-  const departmentData = req.body;
+  const departmentId = parseInt(req.body.id);
 
-  if (departmentData.id) {
+  if (!isNan(departmentId)) {
 
-    const departmentId = parseInt(departmentData.id);
+    const departmentFound = await sqlService.query('SELECT * FROM departments WHERE id = ? AND deleted_at IS NULL', [departmentId]);
 
-    if (isNaN(departmentId)) {
+    if (departmentFound.length > 0) {
 
-      res.status(400).send(
-        {
-          errorType: 'Validation',
-          field: 'id',
-          error: 'must be provided as a number'
-        }
-      );
+      res.send(await sqlService.query(`UPDATE departments SET deleted_at = NOW() WHERE id = ${departmentId}`));
     } else {
 
-      const departmentFound = await sqlService.query('SELECT * FROM departments WHERE id = ? AND deleted_at IS NULL', [departmentId]);
-
-      if (departmentFound.length > 0) {
-
-        res.send(await sqlService.query(`UPDATE departments SET deleted_at = NOW() WHERE id = ${departmentId}`));
-      } else {
-
-        return res.status(404).send(
-          {
-            errorType: 'Resource not found',
-            field: 'id',
-            error: 'department not found'
-          }
-        );
-      }
+      return res.status(404).send(
+        {
+          errorType: 'Resource not found',
+          field: 'id',
+          error: 'department not found'
+        }
+      );
     }
   } else {
 
@@ -115,7 +101,7 @@ app.delete('/api/departments', async (req, res) => {
       {
         errorType: 'Validation',
         field: 'id',
-        error: 'id not provided'
+        error: 'must be provided as a number'
       }
     );
   }
@@ -157,8 +143,6 @@ app.post('/api/employees', async (req, res) => {
 
   const employeeData = req.body;
 
-  console.log(typeof employeeData.is_supervisor);
-
   const employeeValidationErrors = validateEmployee(employeeData);
 
   if (employeeValidationErrors.length === 0) {
@@ -184,47 +168,32 @@ app.put('/api/employees', async (req, res) => {
 
 app.delete('/api/employees', async (req, res) => {
 
-  const employeeData = req.body;
+  const employeeId = req.body.id;
 
-  if (employeeData.id) {
+  if (!isNaN(employeeData.id)) {
 
-    const employeeId = parseInt(employeeData.id);
+    const employeeFound = await sqlService.query('SELECT * FROM employees WHERE id = ? AND deleted_at IS NULL', [employeeId]);
 
-    if (isNaN(employeeId)) {
+    if (employeeFound.length > 0) {
 
-      return res.status(400).send(
-        {
-          errorType: 'Validation',
-          field: 'id',
-          error: 'must be provided as a number'
-        }
-      );
+      res.send(await sqlService.query(`UPDATE employees SET deleted_at = NOW() WHERE id = ${employeeId}`));
     } else {
 
-      const employeeFound = await sqlService.query('SELECT * FROM employees WHERE id = ? AND deleted_at IS NULL', [employeeId]);
-
-      if (employeeFound.length > 0) {
-
-        res.send(await sqlService.query(`UPDATE employees SET deleted_at = NOW() WHERE id = ${employeeId}`));
-      } else {
-
-        return res.status(404).send(
-          {
-            errorType: 'Resource not found',
-            field: 'id',
-            error: 'employee not found'
-          }
-        );
-      }
-    };
-
+      return res.status(404).send(
+        {
+          errorType: 'Resource not found',
+          field: 'id',
+          error: 'employee not found'
+        }
+      );
+    }
   } else {
 
     return res.status(400).send(
       {
         errorType: 'Validation',
         field: 'id',
-        error: 'id not provided'
+        error: 'must be provided as a number'
       }
     );
   }
@@ -305,7 +274,7 @@ const validateDepartment = (departmentData) => {
 
   if (typeof name !== 'string') {
 
-    employeeDataErrorFields.push(
+    departmentDataErrorFields.push(
       {
         errorType: 'Validation',
         field: 'name',
@@ -316,7 +285,7 @@ const validateDepartment = (departmentData) => {
 
   if (typeof supervisor !== 'string') {
 
-    employeeDataErrorFields.push(
+    departmentDataErrorFields.push(
       {
         errorType: 'Validation',
         field: 'supervisor',
