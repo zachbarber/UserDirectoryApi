@@ -18,15 +18,15 @@ const app = express()
 const sqlService = new SqlService();
 
 
-//Company routes
+//Department routes
 
 
-app.get('/api/companies', async (req, res) => {
+app.get('/api/departments', async (req, res) => {
 
   if (req.query.id) {
-    const companyId = parseInt(req.query.id);
+    const departmentId = parseInt(req.query.id);
 
-    if (isNaN(companyId)) {
+    if (isNaN(departmentId)) {
       return res.status(400).send(
         {
           errorType: 'Validation',
@@ -36,53 +36,53 @@ app.get('/api/companies', async (req, res) => {
       );
     } else {
 
-      res.send(await sqlService.query('SELECT * FROM companies WHERE id = ? AND deleted_at IS NULL', [companyId]));
+      res.send(await sqlService.query('SELECT * FROM departments WHERE id = ? AND deleted_at IS NULL', [departmentId]));
 
     }
   } else {
 
-    res.send(await sqlService.query('SELECT * FROM companies WHERE deleted_at IS NULL'));
+    res.send(await sqlService.query('SELECT * FROM departments WHERE deleted_at IS NULL'));
   }
 }
 );
 
 
-app.post('/api/companies', async (req, res) => {
+app.post('/api/departments', async (req, res) => {
 
-  const companyData = req.body;
+  const departmentData = req.body;
 
-  const companyValidationErrors = validateCompany(companyData);
+  const departmentValidationErrors = validateDepartment(departmentData);
 
-  if (companyValidationErrors.length === 0) {
+  if (departmentValidationErrors.length === 0) {
 
-    res.send(await sqlService.query('INSERT INTO companies (name, industry, annual_revenue, created_at) VALUES (?, ?, ?, NOW())', [companyData.name, companyData.industry, companyData.annualRevenue]));
+    res.send(await sqlService.query('INSERT INTO departments (name, supervisor, created_at) VALUES (?, ?, NOW())', [departmentData.name, departmentData.supervisor]));
 
   } else {
 
     return res.status(500).json({
 
-      errorCount: companyValidationErrors.length,
-      errors: companyValidationErrors
+      errorCount: departmentValidationErrors.length,
+      errors: departmentValidationErrors
 
     });
   }
 });
 
 
-app.put('/api/companies', async (req, res) => {
+app.put('/api/departments', async (req, res) => {
 
 });
 
 
-app.delete('/api/companies', async (req, res) => {
+app.delete('/api/departments', async (req, res) => {
 
-  const companyData = req.body;
+  const departmentData = req.body;
 
-  if (companyData.id) {
+  if (departmentData.id) {
 
-    const companyId = parseInt(companyData.id);
+    const departmentId = parseInt(departmentData.id);
 
-    if (isNaN(companyId)) {
+    if (isNaN(departmentId)) {
 
       res.status(400).send(
         {
@@ -93,18 +93,18 @@ app.delete('/api/companies', async (req, res) => {
       );
     } else {
 
-      const companyFound = await sqlService.query('SELECT * FROM companies WHERE id = ? AND deleted_at IS NULL', [companyId]);
+      const departmentFound = await sqlService.query('SELECT * FROM departments WHERE id = ? AND deleted_at IS NULL', [departmentId]);
 
-      if (companyFound.length > 0) {
+      if (departmentFound.length > 0) {
 
-        res.send(await sqlService.query(`UPDATE companies SET deleted_at = NOW() WHERE id = ${companyId}`));
+        res.send(await sqlService.query(`UPDATE departments SET deleted_at = NOW() WHERE id = ${departmentId}`));
       } else {
 
         return res.status(404).send(
           {
             errorType: 'Resource not found',
             field: 'id',
-            error: 'company not found'
+            error: 'department not found'
           }
         );
       }
@@ -161,7 +161,7 @@ app.post('/api/employees', async (req, res) => {
 
   if (employeeValidationErrors.length === 0) {
 
-    res.send(await sqlService.query('INSERT INTO employees (name, role, company, created_at) VALUES (?, ?, ?, NOW())', [employeeData.name, employeeData.role, employeeData.company]));
+    res.send(await sqlService.query('INSERT INTO employees (name, role, department, is_supervisor, supervisor, created_at) VALUES (?, ?, ?, ?, ?, NOW())', [employeeData.name, employeeData.role, employeeData.department, employeeData.is_supervisor, employeeData.supervisor]));
 
   } else {
 
@@ -232,7 +232,7 @@ app.delete('/api/employees', async (req, res) => {
 
 const validateEmployee = (employeeData) => {
 
-  const { name, role, company } = employeeData;
+  const { name, role, department, is_supervisor, supervisor } = employeeData;
 
   const employeeDataErrorFields = [];
 
@@ -258,12 +258,34 @@ const validateEmployee = (employeeData) => {
     );
   }
 
-  if (typeof company !== 'string') {
+  if (typeof department !== 'string') {
 
     employeeDataErrorFields.push(
       {
         errorType: 'Validation',
-        field: 'company',
+        field: 'department',
+        error: 'must be supplied as string'
+      }
+    );
+  }
+
+  if (typeof is_supervisor !== 'boolean') {
+
+    employeeDataErrorFields.push(
+      {
+        errorType: 'Validation',
+        field: 'is_supervisor',
+        error: 'must be supplied as boolean'
+      }
+    );
+  }
+
+  if (typeof supervisor !== 'string') {
+
+    employeeDataErrorFields.push(
+      {
+        errorType: 'Validation',
+        field: 'supervisor',
         error: 'must be supplied as string'
       }
     );
@@ -273,11 +295,11 @@ const validateEmployee = (employeeData) => {
 };
 
 
-const validateCompany = (companyData) => {
+const validateDepartment = (departmentData) => {
 
-  const { name, industry, annualRevenue } = companyData;
+  const { name, supervisor } = departmentData;
 
-  const companyDataErrorFields = [];
+  const departmentDataErrorFields = [];
 
   if (typeof name !== 'string') {
 
@@ -290,29 +312,18 @@ const validateCompany = (companyData) => {
     );
   }
 
-  if (typeof industry !== 'string') {
+  if (typeof supervisor !== 'string') {
 
     employeeDataErrorFields.push(
       {
         errorType: 'Validation',
-        field: 'industry',
+        field: 'supervisor',
         error: 'must be supplied as string'
       }
     );
   }
 
-  if (typeof annualRevenue !== 'number') {
-
-    employeeDataErrorFields.push(
-      {
-        errorType: 'Validation',
-        field: 'annual revenue',
-        error: 'must be supplied as number'
-      }
-    );
-  }
-
-  return companyDataErrorFields;
+  return departmentDataErrorFields;
 };
 
 
