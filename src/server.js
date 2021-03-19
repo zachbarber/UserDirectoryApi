@@ -15,7 +15,9 @@ const app = express()
   .use(bodyParser.json());
 
 
+
 const sqlService = new SqlService();
+
 
 
 //Department routes
@@ -129,7 +131,6 @@ app.get('/api/employees', async (req, res) => {
     } else {
 
       res.send(await sqlService.query('SELECT * FROM employees WHERE id = ? AND deleted_at IS NULL', [employeeId]));
-
     }
   } else {
 
@@ -199,6 +200,11 @@ app.delete('/api/employees', async (req, res) => {
   }
 });
 
+
+//Catchall react handler
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname + '../../employee-directory-web/build'));
+});
 
 
 const validateEmployee = (employeeData) => {
@@ -298,7 +304,7 @@ const validateDepartment = (departmentData) => {
 };
 
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 35565;
 
 app.listen(PORT, () => {
 
