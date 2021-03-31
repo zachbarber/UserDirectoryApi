@@ -3,6 +3,7 @@ import path from 'path';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import SqlService from './SqlService';
+import { SlowBuffer } from 'buffer';
 
 
 //Required for Babel module experimental ES6 & NodeJS compatibility
@@ -11,7 +12,7 @@ global.__dirname = path.resolve('./');
 
 const app = express()
   .use(cors())
-  .use(express.static(path.join(__dirname, '../../employee-directory-web/build')))
+  .use(express.static(path.join(__dirname, '/build')))
   .use(bodyParser.json());
 
 
@@ -19,9 +20,16 @@ const app = express()
 const sqlService = new SqlService();
 
 
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname + '/build'));
+});
+
 
 //Department routes
 
+app.get('/api/departmentNameIds', async (req, res) => {
+  res.send(await sqlService.query('SELECT id, name FROM departments WHERE deleteDate IS NULL'));
+});
 
 app.get('/api/departments', async (req, res) => {
 
@@ -39,11 +47,22 @@ app.get('/api/departments', async (req, res) => {
       );
     } else {
 
-      res.send(await sqlService.query('SELECT * FROM departments WHERE id = ? AND deleted_at IS NULL', [departmentId]));
+      res.send(await sqlService.query(
+        `SELECT 
+        employees.id AS employeeId, 
+        employees.name AS employeeName,
+        employees.isSupervisor AS isSupervisor, 
+        departments.* 
+        FROM employees 
+        INNER JOIN departments ON employees.departmentId = departments.id 
+        WHERE departments.id = ?`,
+        [departmentId]
+      )
+      );
     }
   } else {
 
-    res.send(await sqlService.query('SELECT * FROM departments WHERE deleted_at IS NULL'));
+    res.send(await sqlService.query('SELECT * FROM departments WHERE deleteDate IS NULL'));
   }
 }
 );
@@ -57,7 +76,7 @@ app.post('/api/departments', async (req, res) => {
 
   if (departmentValidationErrors.length === 0) {
 
-    res.send(await sqlService.query('INSERT INTO departments (name, supervisor, created_at) VALUES (?, ?, NOW())', [departmentData.name, departmentData.supervisor]));
+    res.send(await sqlService.query('INSERT INTO departments (name, supervisorId, createDate) VALUES (?, ?, NOW())', [departmentData.name, departmentData.supervisorId]));
 
   } else {
 
@@ -73,6 +92,35 @@ app.post('/api/departments', async (req, res) => {
 
 app.put('/api/departments', async (req, res) => {
 
+  const departmentId = parseInt(req.body.id);
+
+  if (!isNaN(departmentId)) {
+
+    const departmentToUpdate = await SqlService.query('SELECT * FROM departments WHERE id = ? AND deleteDate IS NULL', [departmentId]);
+
+    if (departmentToUpdate.length > 0) {
+
+      res.send(await sqlService.query('UPDATE departments SET name = ?, supervisorId = ? WHERE id = ?', [req.body.name, req.body.supervisorId, departmentId]));
+    } else {
+
+      return res.status(404).send(
+        {
+          errorType: 'Resource not found',
+          field: 'id',
+          error: 'department not found'
+        }
+      );
+    }
+  } else {
+
+    return res.status(400).send(
+      {
+        errorType: 'Validation',
+        field: 'id',
+        error: 'must be provided as a number'
+      }
+    );
+  }
 });
 
 
@@ -80,13 +128,13 @@ app.delete('/api/departments', async (req, res) => {
 
   const departmentId = parseInt(req.body.id);
 
-  if (!isNan(departmentId)) {
+  if (!isNaN(departmentId)) {
 
-    const departmentFound = await sqlService.query('SELECT * FROM departments WHERE id = ? AND deleted_at IS NULL', [departmentId]);
+    const departmentFound = await sqlService.query('SELECT * FROM departments WHERE id = ? AND deleteDate IS NULL', [departmentId]);
 
     if (departmentFound.length > 0) {
 
-      res.send(await sqlService.query(`UPDATE departments SET deleted_at = NOW() WHERE id = ${departmentId}`));
+      res.send(await sqlService.query(`UPDATE departments SET deleteDate = NOW() WHERE id = ${departmentId}`));
     } else {
 
       return res.status(404).send(
@@ -130,11 +178,20 @@ app.get('/api/employees', async (req, res) => {
       );
     } else {
 
-      res.send(await sqlService.query('SELECT * FROM employees WHERE id = ? AND deleted_at IS NULL', [employeeId]));
+      res.send(await sqlService.query(
+        `SELECT 
+      employees.*,
+      departments.name AS departmentName 
+      FROM employees 
+      INNER JOIN departments ON departments.id = employees.departmentId 
+      WHERE employees.id = ? AND employees.deleteDate IS NULL`,
+        [employeeId]
+      )
+      );
     }
   } else {
 
-    res.send(await sqlService.query('SELECT * FROM employees WHERE deleted_at IS NULL'));
+    res.send(await sqlService.query('SELECT * FROM employees WHERE deleteDate IS NULL'));
   }
 }
 );
@@ -148,7 +205,13 @@ app.post('/api/employees', async (req, res) => {
 
   if (employeeValidationErrors.length === 0) {
 
-    res.send(await sqlService.query('INSERT INTO employees (name, role, department, is_supervisor, supervisor, created_at) VALUES (?, ?, ?, ?, ?, NOW())', [employeeData.name, employeeData.role, employeeData.department, employeeData.is_supervisor, employeeData.supervisor]));
+    res.send(await sqlService.query(
+      `INSERT INTO employees 
+    (name, role, departmentId, isSupervisor, hireDate, createDate) 
+    VALUES (?, ?, ?, ?, ?, NOW())`,
+      [employeeData.name, employeeData.role, employeeData.department, employeeData.isSupervisor, employeeData.hireDate]
+    )
+    );
 
   } else {
 
@@ -164,20 +227,23 @@ app.post('/api/employees', async (req, res) => {
 
 app.put('/api/employees', async (req, res) => {
 
-});
+  const employeeId = parseInt(req.body.id);
 
+  if (!isNaN(employeeId)) {
 
-app.delete('/api/employees', async (req, res) => {
+    const employeeToUpdate = await SqlService.query('SELECT * FROM employees WHERE id = ? AND deleteDate IS NULL', [employeeId]);
 
-  const employeeId = req.body.id;
+    if (employeeToUpdate.length > 0) {
 
-  if (!isNaN(employeeData.id)) {
-
-    const employeeFound = await sqlService.query('SELECT * FROM employees WHERE id = ? AND deleted_at IS NULL', [employeeId]);
-
-    if (employeeFound.length > 0) {
-
-      res.send(await sqlService.query(`UPDATE employees SET deleted_at = NOW() WHERE id = ${employeeId}`));
+      res.send(await sqlService.query(
+        `UPDATE employees 
+        SET name = ?, 
+        role = ?, 
+        departmentId = ?, 
+        isSupervisor = ?, 
+        hireDate = ? 
+        WHERE id = ?`,
+        [req.body.name, req.body.role, req.body.departmentId, req.body.isSupervisor, req.body.hireDate, employeeId]));
     } else {
 
       return res.status(404).send(
@@ -201,15 +267,43 @@ app.delete('/api/employees', async (req, res) => {
 });
 
 
-//Catchall react handler
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname + '../../employee-directory-web/build'));
+app.delete('/api/employees', async (req, res) => {
+
+  const employeeId = req.body.id;
+
+  if (!isNaN(employeeData.id)) {
+
+    const employeeFound = await sqlService.query('SELECT * FROM employees WHERE id = ? AND deleteDate IS NULL', [employeeId]);
+
+    if (employeeFound.length > 0) {
+
+      res.send(await sqlService.query(`UPDATE employees SET deleteDate = NOW() WHERE id = ${employeeId}`));
+    } else {
+
+      return res.status(404).send(
+        {
+          errorType: 'Resource not found',
+          field: 'id',
+          error: 'employee not found'
+        }
+      );
+    }
+  } else {
+
+    return res.status(400).send(
+      {
+        errorType: 'Validation',
+        field: 'id',
+        error: 'must be provided as a number'
+      }
+    );
+  }
 });
 
 
 const validateEmployee = (employeeData) => {
 
-  const { name, role, department, is_supervisor, supervisor } = employeeData;
+  const { name, role, departmentId, isSupervisor, hireDate } = employeeData;
 
   const employeeDataErrorFields = [];
 
@@ -235,35 +329,35 @@ const validateEmployee = (employeeData) => {
     );
   }
 
-  if (typeof department !== 'string') {
+  if (typeof departmentId !== 'number') {
 
     employeeDataErrorFields.push(
       {
         errorType: 'Validation',
         field: 'department',
-        error: 'must be supplied as string'
+        error: 'must be supplied as number'
       }
     );
   }
 
-  if (typeof is_supervisor !== 'boolean') {
+  if (typeof isSupervisor !== 'boolean') {
 
     employeeDataErrorFields.push(
       {
         errorType: 'Validation',
-        field: 'is_supervisor',
+        field: 'isSupervisor',
         error: 'must be supplied as boolean'
       }
     );
   }
 
-  if (typeof supervisor !== 'string') {
+  if (typeof hireDate !== 'string' || hireDate.match(/^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$/) === null) {
 
     employeeDataErrorFields.push(
       {
         errorType: 'Validation',
         field: 'supervisor',
-        error: 'must be supplied as string'
+        error: 'must be supplied as string and in format: \x27YY-MM-DDDD\x27'
       }
     );
   }
@@ -274,7 +368,7 @@ const validateEmployee = (employeeData) => {
 
 const validateDepartment = (departmentData) => {
 
-  const { name, supervisor } = departmentData;
+  const { name, supervisorId } = departmentData;
 
   const departmentDataErrorFields = [];
 
@@ -289,13 +383,13 @@ const validateDepartment = (departmentData) => {
     );
   }
 
-  if (typeof supervisor !== 'string') {
+  if (typeof supervisorId !== 'number') {
 
     departmentDataErrorFields.push(
       {
         errorType: 'Validation',
-        field: 'supervisor',
-        error: 'must be supplied as string'
+        field: 'name',
+        error: 'must be supplied as number'
       }
     );
   }
