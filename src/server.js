@@ -3,7 +3,6 @@ import path from 'path';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import SqlService from './SqlService';
-import { SlowBuffer } from 'buffer';
 
 
 //Required for Babel module experimental ES6 & NodeJS compatibility
@@ -207,9 +206,9 @@ app.post('/api/employees', async (req, res) => {
 
     res.send(await sqlService.query(
       `INSERT INTO employees 
-    (name, role, departmentId, isSupervisor, hireDate, createDate) 
-    VALUES (?, ?, ?, ?, ?, NOW())`,
-      [employeeData.name, employeeData.role, employeeData.department, employeeData.isSupervisor, employeeData.hireDate]
+    (name, role, phoneNumber, emailAddress, departmentId, isSupervisor, hireDate, createDate) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [employeeData.name, employeeData.role, employeeData.phoneNumber, employeeData.emailAddress, employeeData.department, employeeData.isSupervisor, employeeData.hireDate]
     )
     );
 
@@ -238,12 +237,14 @@ app.put('/api/employees', async (req, res) => {
       res.send(await sqlService.query(
         `UPDATE employees 
         SET name = ?, 
-        role = ?, 
+        role = ?,
+        phoneNumber = ?,
+        emailAddress = ?, 
         departmentId = ?, 
         isSupervisor = ?, 
         hireDate = ? 
         WHERE id = ?`,
-        [req.body.name, req.body.role, req.body.departmentId, req.body.isSupervisor, req.body.hireDate, employeeId]));
+        [req.body.name, req.body.role, req.body.phoneNumber, req.body.emailAddress, req.body.departmentId, req.body.isSupervisor, req.body.hireDate, employeeId]));
     } else {
 
       return res.status(404).send(
@@ -303,7 +304,7 @@ app.delete('/api/employees', async (req, res) => {
 
 const validateEmployee = (employeeData) => {
 
-  const { name, role, departmentId, isSupervisor, hireDate } = employeeData;
+  const { name, role, phoneNumber, emailAddress, departmentId, isSupervisor, hireDate } = employeeData;
 
   const employeeDataErrorFields = [];
 
@@ -325,6 +326,28 @@ const validateEmployee = (employeeData) => {
         errorType: 'Validation',
         field: 'role',
         error: 'must be supplied as string'
+      }
+    );
+  }
+
+  if (typeof phoneNumber !== 'string') {
+
+    employeeDataErrorFields.push(
+      {
+        errorType: 'Validation',
+        field: 'phone number',
+        error: 'must be supplied as string'
+      }
+    );
+  }
+
+  if (typeof emailAddress !== 'string' || emailAddress.match(/(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/) === null) {
+
+    employeeDataErrorFields.push(
+      {
+        errorType: 'Validation',
+        field: 'email address',
+        error: 'must be supplied as string and in format: \x27name@emailprovider.com\x27'
       }
     );
   }
@@ -356,7 +379,7 @@ const validateEmployee = (employeeData) => {
     employeeDataErrorFields.push(
       {
         errorType: 'Validation',
-        field: 'supervisor',
+        field: 'hire date',
         error: 'must be supplied as string and in format: \x27YY-MM-DDDD\x27'
       }
     );
