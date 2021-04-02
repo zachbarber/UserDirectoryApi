@@ -95,7 +95,7 @@ app.put('/api/departments', async (req, res) => {
 
   if (!isNaN(departmentId)) {
 
-    const departmentToUpdate = await SqlService.query('SELECT * FROM departments WHERE id = ? AND deleteDate IS NULL', [departmentId]);
+    const departmentToUpdate = await sqlService.query('SELECT * FROM departments WHERE id = ? AND deleteDate IS NULL', [departmentId]);
 
     if (departmentToUpdate.length > 0) {
 
@@ -226,49 +226,49 @@ app.post('/api/employees', async (req, res) => {
 
 app.put('/api/employees', async (req, res) => {
 
-  const employeeId = parseInt(req.body.id);
+  const employeeData = req.body;
 
-  if (!isNaN(employeeId)) {
+  employeeData.isSupervisor = Boolean(employeeData.isSupervisor);
 
-    const employeeToUpdate = await SqlService.query('SELECT * FROM employees WHERE id = ? AND deleteDate IS NULL', [employeeId]);
+  console.log('>>>>>>>>>>>>>>>');
+  console.log(employeeData);
+  console.log('>>>>>>>>>>>>>>>');
 
-    if (employeeToUpdate.length > 0) {
+  const employeeValidationErrors = validateEmployee(employeeData);
 
-      await sqlService.query(
-        `UPDATE employees 
-        SET name = ?, 
-        role = ?,
-        phoneNumber = ?,
-        emailAddress = ?, 
-        departmentId = ?, 
-        isSupervisor = ?, 
-        hireDate = ? 
-        WHERE id = ?`,
-        [req.body.name, req.body.role, req.body.phoneNumber, req.body.emailAddress, req.body.departmentId, req.body.isSupervisor, req.body.hireDate, employeeId]);
+  if (employeeValidationErrors.length !== 0) {
 
-      res.send(await sqlService.query('SELECT * FROM employees WHERE id = ? AND deleteDate IS NULL', [employeeId]));
-        
-    } else {
+    return res.status(400).json({
+      errorCount: employeeValidationErrors.length,
+      errors: employeeValidationErrors
+    });
+  }
 
-      return res.status(404).send(
-        {
-          errorType: 'Resource not found',
-          field: 'id',
-          error: 'employee not found'
-        }
-      );
-    }
-  } else {
+  const employeeToUpdate = await sqlService.query('SELECT * FROM employees WHERE id = ? AND deleteDate IS NULL', [employeeData.id]);
 
-    return res.status(400).send(
-      {
-        errorType: 'Validation',
-        field: 'id',
-        error: 'must be provided as a number'
-      }
-    );
+  if (employeeToUpdate.length > 0) {
+
+    await sqlService.query(
+      'UPDATE employees SET name = ?, role = ?, phoneNumber = ?, emailAddress = ?, departmentId = ?, isSupervisor = ?, hireDate = ? WHERE id = ?',
+      [employeeData.name,
+        employeeData.role,
+        employeeData.phoneNumber,
+        employeeData.emailAddress,
+        employeeData.departmentId,
+        employeeData.isSupervisor,
+        employeeData.hireDate,
+        employeeData.id]);
+
+    res.send(await sqlService.query(`SELECT 
+      employees.*,
+      departments.name AS departmentName 
+      FROM employees 
+      INNER JOIN departments ON departments.id = employees.departmentId 
+      WHERE employees.id = ? AND employees.deleteDate IS NULL`,
+    [employeeData.id]));
   }
 });
+
 
 
 app.delete('/api/employees', async (req, res) => {
