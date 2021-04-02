@@ -234,7 +234,7 @@ app.put('/api/employees', async (req, res) => {
 
     if (employeeToUpdate.length > 0) {
 
-      res.send(await sqlService.query(
+      await sqlService.query(
         `UPDATE employees 
         SET name = ?, 
         role = ?,
@@ -244,7 +244,10 @@ app.put('/api/employees', async (req, res) => {
         isSupervisor = ?, 
         hireDate = ? 
         WHERE id = ?`,
-        [req.body.name, req.body.role, req.body.phoneNumber, req.body.emailAddress, req.body.departmentId, req.body.isSupervisor, req.body.hireDate, employeeId]));
+        [req.body.name, req.body.role, req.body.phoneNumber, req.body.emailAddress, req.body.departmentId, req.body.isSupervisor, req.body.hireDate, employeeId]);
+
+      res.send(await sqlService.query('SELECT * FROM employees WHERE id = ? AND deleteDate IS NULL', [employeeId]));
+        
     } else {
 
       return res.status(404).send(
