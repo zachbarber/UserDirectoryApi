@@ -242,7 +242,6 @@ app.delete('/api/employees', async (req, res) => {
 
 const validateEmployee = (employeeData) => {
   const { name, role, phoneNumber, emailAddress, departmentId, isSupervisor, hireDate } = employeeData;
-  isSupervisor = Boolean(isSupervisor);
   const employeeDataErrorFields = [];
   if (typeof name !== 'string') {
     employeeDataErrorFields.push({
