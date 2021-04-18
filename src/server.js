@@ -40,7 +40,7 @@ app.get('/api/departments', async (req, res) => {
         error: 'must be number'
       });
     }
-    res.send(await sqlService.query('SELECT * FROM departments WHERE id = ? AND WHERE deleteDate IS NULL', [departmentId]));
+    res.send(await sqlService.query('SELECT * FROM departments WHERE id = ? AND deleteDate IS NULL', [departmentId]));
   } else {
     res.send(await sqlService.query('SELECT * FROM departments WHERE deleteDate IS NULL'));
   }
