@@ -57,7 +57,7 @@ app.post('/api/departments', async (req, res) => {
     });
   }
 
-  res.send(await sqlService.query('INSERT INTO departments (name, supervisorId, createDate) VALUES (?, ?, NOW())', [departmentData.name, departmentData.supervisorId]));
+  res.send(await sqlService.query('INSERT INTO departments (name, createDate) VALUES (?, NOW())', [departmentData.name]));
 });
 
 
@@ -80,7 +80,7 @@ app.put('/api/departments', async (req, res) => {
     });
   }
 
-  res.send(await sqlService.query('UPDATE departments SET name = ?, supervisorId = ? WHERE id = ?', [departmentData.name, departmentData.supervisorId, departmentData.id]));
+  res.send(await sqlService.query('UPDATE departments SET name = ? WHERE id = ?', [departmentData.name, departmentData.id]));
 });
 
 
@@ -304,21 +304,13 @@ const validateEmployee = (employeeData) => {
 
 
 const validateDepartment = (departmentData) => {
-  const { name, supervisorId } = departmentData;
+  const { name } = departmentData;
   const departmentDataErrorFields = [];
   if (typeof name !== 'string') {
     departmentDataErrorFields.push({
       errorType: 'Validation',
       field: 'name',
       error: 'must be supplied as string'
-    });
-  }
-
-  if (typeof parseInt(supervisorId) !== 'number') {
-    departmentDataErrorFields.push({
-      errorType: 'Validation',
-      field: 'supervisorId',
-      error: 'must be supplied as number'
     });
   }
 

@@ -1,14 +1,14 @@
-CREATE TABLE departments (id INT NOT NULL AUTO_INCREMENT, name VARCHAR(50) NOT NULL, supervisorId INT, createDate datetime NOT NULL, deleteDate datetime, PRIMARY KEY (id));
+CREATE TABLE departments (id INT NOT NULL AUTO_INCREMENT, name VARCHAR(50) NOT NULL, createDate datetime NOT NULL, deleteDate datetime, PRIMARY KEY (id));
 CREATE TABLE employees (id INT NOT NULL AUTO_INCREMENT, name VARCHAR(50) NOT NULL, role VARCHAR(50) NOT NULL, phoneNumber VARCHAR(20), emailAddress VARCHAR(50), departmentId INT, isSupervisor boolean DEFAULT false, hireDate DATE NOT NULL, createDate datetime NOT NULL, deleteDate datetime, PRIMARY KEY (id));
 
-INSERT INTO departments (name, supervisorId, createDate)
-VALUES ('Operations', 1, NOW());
+INSERT INTO departments (name, createDate)
+VALUES ('Operations', NOW());
 
-INSERT INTO departments (name, supervisorId, createDate)
-VALUES ('Sales', 2, NOW());
+INSERT INTO departments (name, createDate)
+VALUES ('Sales', NOW());
 
-INSERT INTO departments (name, supervisorId, createDate)
-VALUES ('Marketing', 3, NOW());
+INSERT INTO departments (name, createDate)
+VALUES ('Marketing', NOW());
 
 
 INSERT INTO employees (name, role, phoneNumber, emailAddress, departmentId, isSupervisor, hireDate, createDate)
@@ -34,6 +34,3 @@ VALUES ('John Bilunes', 'Marketer', '555-555-5555', 'testemail@email.com', 3, FA
 
 ALTER TABLE employees
 ADD FOREIGN KEY (departmentId) REFERENCES departments(id);
-
-ALTER TABLE departments
-ADD FOREIGN KEY (supervisorId) REFERENCES employees(id);
