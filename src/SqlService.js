@@ -14,7 +14,7 @@ export default class SqlService {
     return new Promise((resolve, reject) => {
       this.connection.query(sql, args, (err, rows) => {
         if (err) {
-          throw new Error(`Error in query: ${sql}`);
+          throw new Error(`Error in query: ${sql} >>>>>>>>>>>>>>>>>>>> ${err}`);
         }
 
         resolve(rows);

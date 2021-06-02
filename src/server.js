@@ -9,10 +9,10 @@ import SqlService from './SqlService';
 global.__dirname = path.resolve('./');
 
 
-const app = express()
-  .use(cors())
-  .use(express.static(path.join(__dirname, '/build')))
-  .use(bodyParser.json());
+const app = express();
+app.use(cors());
+app.use(express.static(path.join(__dirname, '/build')));
+app.use(bodyParser.json());
 
 
 const sqlService = new SqlService();
