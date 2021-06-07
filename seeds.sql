@@ -1,3 +1,7 @@
+CREATE DATABASE employeedirectory;
+
+USE employeedirectory;
+
 CREATE TABLE departments (id INT NOT NULL AUTO_INCREMENT, name VARCHAR(50) NOT NULL, createDate datetime NOT NULL, deleteDate datetime, PRIMARY KEY (id));
 CREATE TABLE employees (id INT NOT NULL AUTO_INCREMENT, name VARCHAR(50) NOT NULL, role VARCHAR(50) NOT NULL, phoneNumber VARCHAR(20), emailAddress VARCHAR(50), departmentId INT, isSupervisor boolean DEFAULT false, hireDate DATE NOT NULL, createDate datetime NOT NULL, deleteDate datetime, PRIMARY KEY (id));
 
